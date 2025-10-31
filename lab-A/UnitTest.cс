@@ -1,0 +1,190 @@
+﻿#include "gtest/gtest.h"
+#include "list.h"
+
+
+node* create_test_list_three_elements() {
+    node* head = creat_node("First");
+    node* second = add_node(head, "Second");
+    node* third = add_node(second, "Third");
+    return head;
+}
+
+void free_list(node* head) {
+    if (!head) return;
+
+    node* prev = NULL;
+    node* curr = head;
+    node* next;
+
+    while (curr != NULL) {
+        next = xor_operation(prev, curr->link);
+        free(curr->data);
+        free(curr);
+        prev = curr;
+        curr = next;
+    }
+}
+
+// Тест 1: Создание узла - базовый случай
+TEST(ListTest, creat_node_ValidString_ReturnValidNode_no1) {
+    const char* test_data = "TestData";
+    node* result = creat_node(test_data);
+    ASSERT_NE(result, nullptr);
+    EXPECT_STREQ(result->data, test_data);
+    EXPECT_EQ(result->link, nullptr);
+    free(result->data);
+    free(result);
+}
+
+// Тест 2: Создание узла - NULL данные
+TEST(ListTest, creat_node_NullData_ReturnNull_no2) {
+    node* result = creat_node(NULL);
+    EXPECT_EQ(result, nullptr);
+}
+
+// Тест 3: Добавление узла - в пустой список (через add_node после создания)
+TEST(ListTest, add_node_AfterFirstNode_ReturnNewNode_no3) {
+    node* head = creat_node("First");
+    node* result = add_node(head, "Second");
+    ASSERT_NE(result, nullptr);
+    EXPECT_STREQ(result->data, "Second");
+    EXPECT_EQ(result->link, head);
+    EXPECT_EQ(head->link, result);
+    free_list(head);
+}
+
+// Тест 4: Добавление узла - NULL данные
+TEST(ListTest, add_node_NullData_ReturnNull_no4) {
+    node* head = creat_node("First");
+    node* result = add_node(head, NULL);
+    EXPECT_EQ(result, nullptr);
+    free_list(head);
+}
+
+// Тест 5: Поиск узла - существующий элемент
+TEST(ListTest, found_node_ExistingElement_ReturnNodePointer_no5) {
+    node* head = create_test_list_three_elements();
+    node* result = found_node(head, "Second");
+    ASSERT_NE(result, nullptr);
+    EXPECT_STREQ(result->data, "Second");
+    free_list(head);
+}
+
+// Тест 6: Поиск узла - несуществующий элемент
+TEST(ListTest, found_node_NonExistingElement_ReturnNull_no6) {
+    node* head = create_test_list_three_elements();
+    node* result = found_node(head, "NonExisting");
+    EXPECT_EQ(result, nullptr);
+    free_list(head);
+}
+
+// Тест 7: Поиск узла - пустой список
+TEST(ListTest, found_node_EmptyList_ReturnNull_no7) {
+    node* head = nullptr;
+    node* result = found_node(head, "AnyData");
+    EXPECT_EQ(result, nullptr);
+}
+
+// Тест 8: Удаление по ключу - существующий элемент в середине
+TEST(ListTest, remove_by_key_ExistingMiddleElement_ReturnHead_no8) {
+    node* head = create_test_list_three_elements();
+    node* result = remove_by_key(head, "Second");
+    ASSERT_NE(result, nullptr);
+    node* found = found_node(result, "Second");
+    EXPECT_EQ(found, nullptr);
+    node* first = found_node(result, "First");
+    node* third = found_node(result, "Third");
+    ASSERT_NE(first, nullptr);
+    ASSERT_NE(third, nullptr);
+    free_list(result);
+}
+
+// Тест 9: Удаление по ключу - головной элемент
+TEST(ListTest, remove_by_key_HeadElement_ReturnNewHead_no9) {
+    node* head = create_test_list_three_elements();
+    node* result = remove_by_key(head, "First");
+    ASSERT_NE(result, nullptr);
+    node* found_old_head = found_node(result, "First");
+    EXPECT_EQ(found_old_head, nullptr);
+    EXPECT_STREQ(result->data, "Second");
+    free_list(result);
+}
+
+// Тест 10: Удаление по ключу - несуществующий элемент
+TEST(ListTest, remove_by_key_NonExistingElement_ReturnSameHead_no10) {
+    node* head = create_test_list_three_elements();
+    node* original_head = head;
+    node* result = remove_by_key(head, "NonExisting");
+    EXPECT_EQ(result, original_head);
+
+    free_list(result);
+}
+
+// Тест 11: Вставка между узлами - нормальный случай
+TEST(ListTest, injection_BetweenTwoNodes_ReturnNewNode_no11) {
+    node* first = creat_node("First");
+    node* third = add_node(first, "Third");
+    node* result = injection(first, third, "Second");
+    ASSERT_NE(result, nullptr);
+    EXPECT_STREQ(result->data, "Second");
+    free_list(first);
+}
+
+// Тест 12: Удаление узла - конкретный узел
+TEST(ListTest, remove_node_SpecificNode_ReturnHead_no12) {
+    node* head = create_test_list_three_elements();
+    node* target = found_node(head, "Second");
+    ASSERT_NE(target, nullptr);
+    node* result = remove_node(head, target);
+    ASSERT_NE(result, nullptr);
+    node* found_after_remove = found_node(result, "Second");
+    EXPECT_EQ(found_after_remove, nullptr);
+    free_list(result);
+}
+
+// Тест 13: XOR операция - проверка корректности
+TEST(ListTest, xor_operation_TwoPointers_ReturnXorValue_no13) {
+    node a, b;
+    node* ptr_a = &a;
+    node* ptr_b = &b;
+    node* result = xor_operation(ptr_a, ptr_b);
+    EXPECT_EQ(result, (node*)((unsigned long long)ptr_a ^ (unsigned long long)ptr_b));
+}
+
+// Тест 14: Итерация по списку - проверка корректности
+TEST(ListTest, next_node_ValidNodes_ReturnNextNode_no14) {
+    node* head = creat_node("First");
+    node* second = add_node(head, "Second");
+    node* third = add_node(second, "Third");
+    node* next_from_head = next_node(NULL, head);
+    ASSERT_NE(next_from_head, nullptr);
+    EXPECT_STREQ(next_from_head->data, "Second");
+    node* next_from_second = next_node(head, second);
+    ASSERT_NE(next_from_second, nullptr);
+    EXPECT_STREQ(next_from_second->data, "Third");
+    node* next_from_third = next_node(second, third);
+    EXPECT_EQ(next_from_third, nullptr);
+    free_list(head);
+}
+
+// Тест 15: Итерация по списку - следующий элемент NULL
+TEST(ListTest, next_node_SingleNodeList_ReturnNull_no15) {
+    node* head = creat_node("Alone");
+    node* result = next_node(NULL, head);
+    EXPECT_EQ(result, nullptr);
+    free(head->data);
+    free(head);
+}
+
+// Тест 16: Итерация по списку - обратная навигация
+TEST(ListTest, next_node_ReverseIteration_ReturnPreviousNode_no16) {
+    node* head = creat_node("First");
+    node* second = add_node(head, "Second");
+    node* next = next_node(NULL, head);
+    ASSERT_NE(next, nullptr);
+    EXPECT_STREQ(next->data, "Second");
+    node* prev = next_node(NULL, second);
+    ASSERT_NE(prev, nullptr);
+    EXPECT_STREQ(prev->data, "First");
+    free_list(head);
+}
